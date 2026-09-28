@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1626">
+<title>D-DAY 2026 - Accueil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0E1626;--card:#16213A;--line:#2B3A5A;--ink:#E8EDF7;--muted:#A3AEC4;--blue:#6F93FF;--ok:#1E8E5A;--okb:#E1F4EA;--warn:#B7791F;--warnb:#FFF3DC;--err:#C23B3B;--errb:#FDE7E7}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+.app{max-width:480px;margin:0 auto;padding:16px;display:flex;flex-direction:column;gap:14px;min-height:100%}
+header{display:flex;justify-content:space-between;align-items:center}
+.logo{font-weight:800;font-size:20px;letter-spacing:-0.03em}.logo span{color:var(--blue)}
+.count{font-size:13px;color:var(--muted)}.count b{color:var(--ink);font-size:16px}
+.cam{position:relative;border-radius:18px;overflow:hidden;background:#000;aspect-ratio:1/1;border:1px solid var(--line)}
+#reader{width:100%;height:100%}
+#reader video{object-fit:cover!important;width:100%!important;height:100%!important}
+.frame{position:absolute;inset:18%;border:3px solid rgba(255,255,255,.85);border-radius:18px;pointer-events:none}
+.start{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--card);text-align:center;padding:20px}
+.start p{margin:0;color:var(--muted);font-size:14px}
+.btn{appearance:none;border:0;cursor:pointer;background:var(--ink);color:var(--bg);font:inherit;font-weight:800;font-size:16px;padding:14px 22px;border-radius:12px}
+.btn2{appearance:none;cursor:pointer;background:transparent;color:var(--ink);border:1px solid var(--line);font:inherit;font-weight:600;font-size:14px;padding:11px 16px;border-radius:12px}
+.hint{text-align:center;color:var(--muted);font-size:14px;margin:0}
+.res{border-radius:18px;padding:22px 20px;display:none;animation:pop .22s ease-out}
+.res.show{display:block}
+.res.ok{background:var(--okb);color:#0F4A2F}
+.res.warn{background:var(--warnb);color:#5C3B06}
+.res.err{background:var(--errb);color:#6B1C1C}
+.res .k{font-size:13px;font-weight:700;margin:0 0 4px}
+.res .n{font-size:28px;line-height:1.1;font-weight:800;letter-spacing:-0.02em;margin:0 0 4px}
+.res .c{font-size:16px;font-weight:600;margin:0 0 12px}
+.res .d{font-size:14px;margin:0;line-height:1.5}
+.badge{display:inline-block;font-size:12px;font-weight:800;padding:3px 9px;border-radius:999px;background:rgba(0,0,0,.08);margin-bottom:10px}
+.manual{display:flex;gap:8px}
+.manual input{flex:1;min-width:0;font:inherit;font-size:15px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;text-transform:uppercase}
+.manual input::placeholder{color:#6B7690;text-transform:none}
+.foot{display:flex;justify-content:space-between;gap:8px;margin-top:auto}
+.err-msg{color:#FF9B9B;font-size:13px;margin:-6px 0 0;min-height:0}
+@keyframes pop{from{transform:scale(.97);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.res{animation:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <span class="logo">disway<span>.</span> accueil</span>
+    <span class="count">Présents <b id="nb">0</b></span>
+  </header>
+
+  <div class="cam">
+    <div id="reader"></div>
+    <div class="frame" id="frame" hidden></div>
+    <div class="start" id="start">
+      <p>THE D-DAY 2026<br>Cathédrale du Sacré-Cœur, Casablanca</p>
+      <button class="btn" id="go">Démarrer le scan</button>
+      <p id="camerr" style="color:#FF9B9B"></p>
+    </div>
+  </div>
+
+  <p class="hint" id="hint">Placez le QR code du billet dans le cadre</p>
+
+  <div class="res" id="res" role="status" aria-live="assertive"></div>
+
+  <div class="manual">
+    <input id="tok" placeholder="Code du billet, ex : DD26-7KQ9X" autocomplete="off">
+    <button class="btn2" id="check">Vérifier</button>
+  </div>
+  <p class="err-msg" id="tokerr"></p>
+
+  <div class="foot">
+    <button class="btn2" id="list">Voir les présents</button>
+    <button class="btn2" id="reset">Remettre à zéro</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function(){
+  var EVENT = {date:'Jeudi 19 novembre 2026', place:'Cathédrale du Sacré-Cœur, Casablanca'};
+
+  var GUESTS = {
+    'DD26-7KQ9X': {name:'Ryad Elkhassal', company:'Disway', type:'Invité'},
+    'DD26-4HT2M': {name:'Salma Idrissi', company:'Société ABC', type:'VIP'},
+    'DD26-9PL3Z': {name:'Youssef Alami', company:'Atlas IT', type:'Sponsor'}
+  };
+
+  var KEY = 'dday26-checkins';
+  var qr = null, busy = false, timer = null;
+
+  function load(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}}
+  function save(d){try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function count(){document.getElementById('nb').textContent=Object.keys(load()).length;}
+  function hhmm(ts){var d=new Date(ts);return ('0'+d.getHours()).slice(-2)+'h'+('0'+d.getMinutes()).slice(-2);}
+
+  function tokenFrom(text){
+    text = String(text||'').trim();
+    var m = text.match(/[?&]t=([A-Za-z0-9-]+)/);
+    if(m) return m[1].toUpperCase();
+    return text.toUpperCase();
+  }
+
+  function show(kind, html){
+    var r=document.getElementById('res');
+    r.className='res show '+kind;
+    r.innerHTML=html;
+    if(navigator.vibrate) navigator.vibrate(kind==='ok'?80:[60,60,60]);
+  }
+
+  function handle(raw){
+    var t = tokenFrom(raw), g = GUESTS[t], log = load();
+    if(!g){
+      show('err','<p class="k">Billet non reconnu</p><p class="n">Accès à vérifier</p><p class="d">Le code <b>'+esc(t||'vide')+'</b> ne figure pas dans la liste des invités. Orientez la personne vers le comptoir d\'accueil.</p>');
+      return;
+    }
+    if(log[t]){
+      show('warn','<span class="badge">'+esc(g.type)+'</span><p class="k">Déjà enregistré à '+hhmm(log[t])+'</p><p class="n">'+esc(g.name)+'</p><p class="c">'+esc(g.company)+'</p><p class="d">Ce billet a déjà été scanné. Vérifiez l\'identité si besoin.</p>');
+      return;
+    }
+    log[t]=Date.now(); save(log); count();
+    show('ok','<span class="badge">'+esc(g.type)+'</span><p class="k">Bienvenue au D-DAY 2026</p><p class="n">'+esc(g.name)+'</p><p class="c">'+esc(g.company)+'</p><p class="d">'+EVENT.date+'<br>'+EVENT.place+'<br>Entrée enregistrée à '+hhmm(log[t])+'</p>');
+  }
+
+  function onScan(text){
+    if(busy) return;
+    busy=true;
+    handle(text);
+    clearTimeout(timer);
+    timer=setTimeout(function(){busy=false;document.getElementById('hint').textContent='Prêt pour le billet suivant';},2500);
+  }
+
+  document.getElementById('go').addEventListener('click',function(){
+    var errEl=document.getElementById('camerr');
+    errEl.textContent='';
+    if(!window.Html5Qrcode){errEl.textContent='Le module de scan n\'a pas chargé. Vérifiez la connexion, ou utilisez la saisie du code ci-dessous.';return;}
+    qr = qr || new Html5Qrcode('reader');
+    qr.start({facingMode:'environment'},{fps:10,qrbox:function(w,h){var s=Math.floor(Math.min(w,h)*0.64);return {width:s,height:s};}},onScan,function(){})
+      .then(function(){document.getElementById('start').hidden=true;document.getElementById('frame').hidden=false;})
+      .catch(function(){errEl.textContent='Accès à la caméra refusé ou indisponible. Autorisez la caméra dans le navigateur, ou saisissez le code ci-dessous.';});
+  });
+
+  var tok=document.getElementById('tok'), tokerr=document.getElementById('tokerr');
+  tok.addEventListener('input',function(){tokerr.textContent='';});
+  function manual(){
+    if(!tok.value.trim()){tokerr.textContent='Entrez le code inscrit sous le QR code.';tok.focus();return;}
+    handle(tok.value); tok.value='';
+  }
+  document.getElementById('check').addEventListener('click',manual);
+  tok.addEventListener('keydown',function(e){if(e.key==='Enter')manual();});
+
+  document.getElementById('list').addEventListener('click',function(){
+    var log=load(), keys=Object.keys(log).sort(function(a,b){return log[b]-log[a];});
+    if(!keys.length){show('warn','<p class="k">Présents</p><p class="n">Personne pour l\'instant</p><p class="d">Les entrées scannées apparaîtront ici.</p>');return;}
+    show('ok','<p class="k">Présents ('+keys.length+')</p><p class="d">'+keys.map(function(k){var g=GUESTS[k]||{name:k,company:''};return hhmm(log[k])+' - '+esc(g.name)+' ('+esc(g.company)+')';}).join('<br>')+'</p>');
+  });
+
+  document.getElementById('reset').addEventListener('click',function(){
+    if(!confirm('Effacer toutes les entrées enregistrées sur ce téléphone ?')) return;
+    save({}); count(); document.getElementById('res').className='res';
+  });
+
+  count();
+})();
+</script>
+</body>
+</html>
